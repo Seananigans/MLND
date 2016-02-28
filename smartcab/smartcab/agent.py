@@ -23,9 +23,15 @@ class LearningAgent(Agent):
         deadline = self.env.get_deadline(self)
 
         # TODO: Update state
-        
+        self.state = {'light': None,
+        'oncoming': None,
+        'right': None,
+        'left':None,
+        'location':None,
+        'heading':None}
+        #'light': TrafficLight.valid_states, 'oncoming': valid_actions, 'left': valid_actions, 'right': valid_actions
         # TODO: Select action according to your policy
-        action = None
+        action = random.choice(Environment.valid_actions[1:])
 
         # Execute action and get reward
         reward = self.env.act(self, action)
