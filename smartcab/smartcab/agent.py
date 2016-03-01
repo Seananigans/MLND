@@ -26,25 +26,37 @@ class LearningAgent(Agent):
 
         # TODO: Update state
         self.state = {
+        'next_waypoint':self.next_waypoint,
         'light': inputs['light'],
         'oncoming': inputs['oncoming'],
         'right': inputs['right'],
         'left':inputs['left'],
-        'next_waypoint':self.next_waypoint,
         'deadline':deadline,
+        }.items()
+        
+        {
         'location':None,
         'heading':None,
         'distance':None
         }
         
+        actions = Environment.valid_actions[1:]
+        
+        largest = 0
+        max_act = random.choice(Environment.valid_actions[1:])
+        for act in actions:
+        	current_q_val = self.q_table.get((tuple(self.state), act),0)
+        	if current_q_val > largest:
+        		largest = current_q_val
+        		max_act = act
         # TODO: Select action according to your policy
-        action = random.choice(Environment.valid_actions[1:])
+        action = max_act
 
         # Execute action and get reward
         reward = self.env.act(self, action)
 
         # TODO: Learn policy based on state, action, reward
-
+        self.q_table[(tuple(self.state), action)] = self.q_table.get((tuple(self.state), action),0)
         print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
 
 
