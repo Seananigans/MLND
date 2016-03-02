@@ -11,8 +11,12 @@ class LearningAgent(Agent):
         self.color = 'red'  # override color
         self.planner = RoutePlanner(self.env, self)  # simple route planner to get next_waypoint
         # TODO: Initialize any additional variables here
-        self.state = None
+        self.gamma = 0.9
+        self.alpha = 0.5
         self.q_table = {}
+        self.prev_state = ()
+        self.prev_action = None
+        self.prev_reward = 0.0
 
     def reset(self, destination=None):
         self.planner.route_to(destination)
@@ -34,29 +38,36 @@ class LearningAgent(Agent):
         'deadline':deadline,
         }.items()
         
-        {
-        'location':None,
-        'heading':None,
-        'distance':None
-        }
-        
         actions = Environment.valid_actions[1:]
+#         qs = [self.q_table[(tuple(self.state), a)] for a in actions]
+#         max_q = max(qs)
         
-        largest = 0
+        # TODO: Select action according to your policy
+        max_q = 0.
         max_act = random.choice(Environment.valid_actions[1:])
         for act in actions:
-        	current_q_val = self.q_table.get((tuple(self.state), act),0)
-        	if current_q_val > largest:
-        		largest = current_q_val
+        	self.q_table[(tuple(self.state), act)] = self.q_table.get((tuple(self.state), act), 0.0)
+        	if self.q_table[(tuple(self.state), act)] > max_q:
+        		max_q = self.q_table[(tuple(self.state), act)]
         		max_act = act
-        # TODO: Select action according to your policy
         action = max_act
 
         # Execute action and get reward
         reward = self.env.act(self, action)
 
         # TODO: Learn policy based on state, action, reward
-        self.q_table[(tuple(self.state), action)] = self.q_table.get((tuple(self.state), action),0)
+        value = self.prev_reward + self.gamma * max_q
+        if (self.q_table.has_key( (tuple(self.prev_state), self.prev_action) ) ):
+        	update = self.alpha * (value - self.q_table[(tuple(self.prev_state), self.prev_action)])
+        	self.q_table[(tuple(self.prev_state), self.prev_action)] += update
+        else:
+        	update = self.prev_reward
+        	self.q_table[(tuple(self.state), action)] += update
+        #self.q_table[(tuple(self.state), action)] = reward + self.q_table.get((tuple(self.state), action),0)
+        
+        self.prev_state = self.state
+        self.prev_action = action
+        self.prev_reward = reward
         print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
 
 
