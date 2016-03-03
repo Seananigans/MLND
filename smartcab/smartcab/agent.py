@@ -21,41 +21,49 @@ class LearningAgent(Agent):
     def reset(self, destination=None):
         self.planner.route_to(destination)
         # TODO: Prepare for a new trip; reset any variables here, if required
+    
+    def update_state(self, next_waypoint, inputs, deadline):
+        state = tuple({
+        'next_waypoint':next_waypoint,
+        'light': inputs['light'],
+        'oncoming': inputs['oncoming'],
+    #         'right': inputs['right'], 
+    #         remove oncoming traffic from right because it will learn this rule 
+    #         through the color of the light
+        'left':inputs['left'],
+        'deadline':deadline,
+        }.items())
+        return state
 
+    def choose_action(self, state, epsilon=0.1):
+        actions = Environment.valid_actions
+        max_q = None
+        for act in actions:
+            self.q_table[(tuple(state), act)] = self.q_table.get((tuple(state), act), 0.0)
+            q_value = self.q_table[(tuple(state), act)]
+            if q_value > max_q:
+                max_q = q_value
+                max_action = act
+        if random.random()<epsilon:
+            max_action = random.choice(actions)
+        return max_action, max_q
+        
     def update(self, t):
         # Gather inputs
         self.next_waypoint = self.planner.next_waypoint()  # from route planner, also displayed by simulator
         inputs = self.env.sense(self)
         deadline = self.env.get_deadline(self)
-        #distance = env.compute_dist(planner.destination, 
-
+        #distance = env.compute_dist(planner.destination,
+        print self
         # TODO: Update state
-        self.state = update_state(self.next_waypoint, inputs, deadline)
-#         self.state = {
-#         'next_waypoint':self.next_waypoint,
-#         'light': inputs['light'],
-#         'oncoming': inputs['oncoming'],
-#         #'right': inputs['right'], 
-# #         remove oncoming traffic from right because it will learn this rule 
-# #         through the color of the light
-#         'left':inputs['left'],
-#         'deadline':deadline,
-#         }.items()
+        self.state = self.update_state(self.next_waypoint, inputs, deadline)
         
         actions = Environment.valid_actions
 #         qs = [self.q_table[(tuple(self.state), a)] for a in actions]
 #         max_q = max(qs)
         
         # TODO: Select action according to your policy
-#         max_q = 0.
-#         max_act = random.choice(actions)
-#         for act in actions:
-#         	self.q_table[(tuple(self.state), act)] = self.q_table.get((tuple(self.state), act), 0.0)
-#         	if self.q_table[(tuple(self.state), act)] > max_q:
-#         		max_q = self.q_table[(tuple(self.state), act)]
-#         		max_act = act
-#         action = max_act
-		action = choose_action(tuple(self.state))
+        action, max_q = self.choose_action(self.state)
 
         # Execute action and get reward
         reward = self.env.act(self, action)
@@ -64,73 +72,35 @@ class LearningAgent(Agent):
         inputs = self.env.sense(self)
         deadline = self.env.get_deadline(self)
         
-        state_prime = update_state(self.next_waypoint, inputs, deadline)
+        state_prime = self.update_state(self.next_waypoint, inputs, deadline)
 
         # TODO: Learn policy based on state, action, reward
         if (self.q_table.has_key( (tuple(self.prev_state), self.prev_action) ) ):
-        	value = self.prev_reward + self.gamma * max_q
-        	update = self.alpha * (value - self.q_table[(tuple(self.prev_state), self.prev_action)])
-        	self.q_table[(tuple(self.prev_state), self.prev_action)] += update
-        	self.hallucinate(100)
+            value = self.prev_reward + self.gamma * max_q
+            update = self.alpha * (value - self.q_table[(tuple(self.prev_state), self.prev_action)])
+            self.q_table[(tuple(self.prev_state), self.prev_action)] += update
+            #self.hallucinate(100)
         else:
-        	update = self.prev_reward
-        	self.q_table[(tuple(self.state), action)] += update
+            update = self.prev_reward
+            self.q_table[(tuple(self.state), action)] += update
         
         self.prev_state = self.state
         self.prev_action = action
         self.prev_reward = reward
         print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
-	
-	def update_state(self, waypoint, inputs, deadline):
-		state = tuple({
-        'next_waypoint':next_waypoint,
-        'light': inputs['light'],
-        'oncoming': inputs['oncoming'],
-#         'right': inputs['right'], 
-#         remove oncoming traffic from right because it will learn this rule 
-#         through the color of the light
-        'left':inputs['left'],
-        'deadline':deadline,
-        }.items())
-        return state
-		
-	def choose_action(self, state, epsilon=0.1):
-		actions = Environment.valid_actions
-		max_q = None
-		for act in actions:
-			self.q_table[(tuple(state), act)] = self.q_table.get((tuple(state), act), 0.0)
-			q_value = self.q_table[(tuple(state), act)]
-			if q_value > max_q:
-				max_q = q_value
-				max_action = act
-		if random.random()<epsilon:
-			max_action = choice(actions)
-		return max_action
-	
-	def hallucinate(self, iterations):
-		for i in range(iterations):
-			#Choose random state from q_table and act randomly
-			s, a = choice(self.q_table.keys())
-			"---------------------------------------"
-			s_prime = self.execute_action(s, a)
-			a_prime = self.choose_action(s_prime)
-			#Update Q table with state, action, reward, state_prime, and action_prime
-			q_prime = self.q_table[(s_prime, a_prime)]
-			value = self.reward(s) + self.gamma*q_prime - self.q_table[(s, a)]
-			self.q_table[(s, a)] += self.alpha * value
-	
-	#Below is from other implementation
-	def update(self):
-		action = self.policy(self.state)
-		state_prime = self.execute_action(self.state, action)
-		action_prime = self.policy(state_prime)
-		#Update Q table with state, action, reward, state_prime, and action_prime
-		q_prime = self.q_table[(state_prime, action_prime)]
-		value = self.reward(self.state) + self.gamma*q_prime
-		value -= self.q_table[(self.state, action)]
-		self.q_table[(self.state, action)] += self.alpha* value
-		#Update state of agent to be new state_prime
-		self.state = state_prime
+        
+    
+    def hallucinate(self, iterations):
+        for i in range(iterations):
+            #Choose random state from q_table and act randomly
+            s, a = choice(self.q_table.keys())
+            "---------------------------------------"
+            s_prime = self.execute_action(s, a)
+            a_prime = self.choose_action(s_prime)
+            #Update Q table with state, action, reward, state_prime, and action_prime
+            q_prime = self.q_table[(s_prime, a_prime)]
+            value = self.reward(s) + self.gamma*q_prime - self.q_table[(s, a)]
+            self.q_table[(s, a)] += self.alpha * value
 
 def run():
     """Run the agent for a finite number of trials."""
