@@ -5,10 +5,7 @@ dct = {
 'right': 'right',
 'left': 'left',
 'next_waypoint':"way",
-'deadline':2.0,
-'location':None,
-'heading':None,
-'distance':None
+'deadline':2.0
 }
 
 for i in dct.items():
