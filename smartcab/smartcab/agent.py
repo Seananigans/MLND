@@ -22,9 +22,14 @@ class LearningAgent(Agent):
         self.planner.route_to(destination)
         # TODO: Prepare for a new trip; reset any variables here, if required
     
-    def update_state(self, next_waypoint, inputs, deadline):
+    def update_state(self):
+        # Gather inputs
+        self.next_waypoint = self.planner.next_waypoint()  # from route planner, also displayed by simulator
+        inputs = self.env.sense(self)
+        deadline = self.env.get_deadline(self)
+        
         state = tuple({
-        'next_waypoint':next_waypoint,
+        'next_waypoint':self.next_waypoint,
         'light': inputs['light'],
         'oncoming': inputs['oncoming'],
     #         'right': inputs['right'], 
@@ -33,7 +38,7 @@ class LearningAgent(Agent):
         'left':inputs['left'],
         'deadline':deadline,
         }.items())
-        return state
+        return state, inputs, deadline
 
     def choose_action(self, state, epsilon=0.1):
         actions = Environment.valid_actions
@@ -49,36 +54,27 @@ class LearningAgent(Agent):
         return max_action, max_q
         
     def update(self, t):
-        # Gather inputs
-        self.next_waypoint = self.planner.next_waypoint()  # from route planner, also displayed by simulator
-        inputs = self.env.sense(self)
-        deadline = self.env.get_deadline(self)
-        #distance = env.compute_dist(planner.destination,
-        print self
         # TODO: Update state
-        self.state = self.update_state(self.next_waypoint, inputs, deadline)
-        
-        actions = Environment.valid_actions
-#         qs = [self.q_table[(tuple(self.state), a)] for a in actions]
-#         max_q = max(qs)
-        
+        self.state = self.update_state()[0]
+
         # TODO: Select action according to your policy
+        actions = Environment.valid_actions
         action, max_q = self.choose_action(self.state)
 
         # Execute action and get reward
         reward = self.env.act(self, action)
+        state_prime, inputs, deadline = self.update_state()
+        action_prime, max_q_prime = self.choose_action(self.state)
         
-        self.next_waypoint = self.planner.next_waypoint()  # from route planner, also displayed by simulator
-        inputs = self.env.sense(self)
-        deadline = self.env.get_deadline(self)
-        
-        state_prime = self.update_state(self.next_waypoint, inputs, deadline)
-
         # TODO: Learn policy based on state, action, reward
-        if (self.q_table.has_key( (tuple(self.prev_state), self.prev_action) ) ):
+        value = reward + self.gamma * max_q_prime
+        value -= self.q_table[(self.state, action)]
+        self.q_table[(self.state, action)] += self.alpha * value
+        
+        if (self.q_table.has_key( (self.prev_state, self.prev_action) ) ):
             value = self.prev_reward + self.gamma * max_q
-            update = self.alpha * (value - self.q_table[(tuple(self.prev_state), self.prev_action)])
-            self.q_table[(tuple(self.prev_state), self.prev_action)] += update
+            update = self.alpha * (value - self.q_table[(self.prev_state, self.prev_action)])
+            self.q_table[(self.prev_state, self.prev_action)] += update
             #self.hallucinate(100)
         else:
             update = self.prev_reward
