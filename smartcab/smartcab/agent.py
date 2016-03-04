@@ -11,16 +11,20 @@ class LearningAgent(Agent):
         self.color = 'red'  # override color
         self.planner = RoutePlanner(self.env, self)  # simple route planner to get next_waypoint
         # TODO: Initialize any additional variables here
-        self.gamma = 0.9
-        self.alpha = 0.7
+        self.gamma = 0.5
+        self.alpha = 1.0
         self.q_table = {}
         self.prev_state = ()
         self.prev_action = None
         self.prev_reward = 0.0
+        self.cummulative_reward = 0.0
+        self.ddlines = []
 
     def reset(self, destination=None):
         self.planner.route_to(destination)
         # TODO: Prepare for a new trip; reset any variables here, if required
+        self.cummulative_reward = 0
+        self.ddlines = []
     
     def update_state(self):
         # Gather inputs
@@ -31,11 +35,11 @@ class LearningAgent(Agent):
         state = tuple({
         'next_waypoint':self.next_waypoint,
         'light': inputs['light'],
-        'oncoming': inputs['oncoming'],
-    #         'right': inputs['right'], 
-    #         remove oncoming traffic from right because it will learn this rule 
-    #         through the color of the light
-        'left':inputs['left'],
+#         'oncoming': inputs['oncoming'],
+#     #         'right': inputs['right'], 
+#     #         remove oncoming traffic from right because it will learn this rule 
+#     #         through the color of the light
+#         'left':inputs['left'],
         'deadline':deadline,
         }.items())
         return state, inputs, deadline
@@ -58,7 +62,7 @@ class LearningAgent(Agent):
         self.state = self.update_state()[0]
 
         # TODO: Select action according to your policy
-        actions = Environment.valid_actions
+        actions = Environment.valid_actions[1:]
         action, max_q = self.choose_action(self.state)
 
         # Execute action and get reward
@@ -80,9 +84,15 @@ class LearningAgent(Agent):
             update = self.prev_reward
             self.q_table[(tuple(self.state), action)] += update
         
+        self.ddlines.append(deadline)
+        self.cummulative_reward += reward
         self.prev_state = self.state
         self.prev_action = action
         self.prev_reward = reward
+        if deadline == 0:
+        	print "Max deadline: {}".format(max(self.ddlines))
+        	print "Cummulative reward for trial: {}".format(self.cummulative_reward)
+        	print "Averate overall reward: {}".format(self.cummulative_reward/max(self.ddlines))
         print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
         
     
@@ -107,7 +117,7 @@ def run():
     e.set_primary_agent(a, enforce_deadline=True)  # set agent to track
 
     # Now simulate it
-    sim = Simulator(e, update_delay=0.05)  # reduce update_delay to speed up simulation
+    sim = Simulator(e, update_delay=0.005)  # reduce update_delay to speed up simulation
     sim.run(n_trials=100)  # press Esc or close pygame window to quit
 
 
