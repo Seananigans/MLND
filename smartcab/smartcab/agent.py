@@ -54,7 +54,7 @@ class LearningAgent(Agent):
                 max_q = q_value
                 max_action = act
         if random.random()<epsilon:
-            max_action = random.choice(actions)
+            max_action = random.choice(actions[1:])
         return max_action, max_q
         
     def update(self, t):
@@ -62,7 +62,7 @@ class LearningAgent(Agent):
         self.state = self.update_state()[0]
 
         # TODO: Select action according to your policy
-        actions = Environment.valid_actions[1:]
+        actions = Environment.valid_actions
         action, max_q = self.choose_action(self.state)
 
         # Execute action and get reward
