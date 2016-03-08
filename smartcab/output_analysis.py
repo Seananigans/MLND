@@ -40,3 +40,4 @@ for line in fh:
 	elif re.search("Primary agent could not reach destination within deadline!", line):
 		rewards.append( 0 )
 print rewards
+print float(sum(rewards))/len(rewards)

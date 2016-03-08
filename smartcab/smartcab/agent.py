@@ -12,7 +12,7 @@ class LearningAgent(Agent):
         self.planner = RoutePlanner(self.env, self)  # simple route planner to get next_waypoint
         # TODO: Initialize any additional variables here
         self.gamma = 0.9
-        self.alpha = 0.7
+        self.alpha = 1.0
         self.q_table = {}
         self.ego_q_table = {}
         self.allo_q_table = {}
