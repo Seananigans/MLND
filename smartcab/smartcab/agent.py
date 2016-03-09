@@ -12,7 +12,7 @@ class LearningAgent(Agent):
         self.planner = RoutePlanner(self.env, self)  # simple route planner to get next_waypoint
         # TODO: Initialize any additional variables here
         self.gamma = 0.95
-        self.alpha = 0.7
+        self.alpha = 0.3
         self.q_table = {}
         self.ego_q_table = {}
         self.allo_q_table = {}
@@ -38,19 +38,18 @@ class LearningAgent(Agent):
         'next_waypoint':self.next_waypoint,
         'light': inputs['light'],
 #         'oncoming': inputs['oncoming'],
-        'time_left': time_left,
-#         'left':inputs['left'],
+#         'time_left': time_left,
         }.items())
         return state, inputs, deadline
         
     def discretize_deadline(self, deadline):
         time_left = float(deadline)/max(self.ddlines)
         if time_left>0.5:
-            return 2
+            return 0.40
 #         elif time_left>0.33:
-#             return 1
+#             return 0.20
         else:
-            return 0
+            return 0.05
         
     def choose_action(self, state, epsilon=0.1):
         actions = Environment.valid_actions
@@ -61,7 +60,10 @@ class LearningAgent(Agent):
             if q_value > max_q:
                 max_q = q_value
                 max_action = act
-        if random.random()<epsilon:
+        
+        deadline = self.env.get_deadline(self)
+        time_left = self.discretize_deadline(deadline)
+        if random.random()<time_left:
             max_action = random.choice(actions[1:])
         return max_action, max_q
     

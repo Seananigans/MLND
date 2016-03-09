@@ -30,6 +30,8 @@ mv_avg = [None for i in range(n_points)] + mv_avg
 
 plt.plot( rewards )
 plt.plot( mv_avg )
+plt.xlabel("Trials")
+plt.ylabel("Total Rewards")
 plt.show()
 
 # Report how well the learning agent does as it approaches the end of its trials.
