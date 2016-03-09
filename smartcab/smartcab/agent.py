@@ -11,8 +11,8 @@ class LearningAgent(Agent):
         self.color = 'red'  # override color
         self.planner = RoutePlanner(self.env, self)  # simple route planner to get next_waypoint
         # TODO: Initialize any additional variables here
-        self.gamma = 0.9
-        self.alpha = 1.0
+        self.gamma = 0.95
+        self.alpha = 0.7
         self.q_table = {}
         self.ego_q_table = {}
         self.allo_q_table = {}
@@ -31,15 +31,27 @@ class LearningAgent(Agent):
         self.next_waypoint = self.planner.next_waypoint()  # from route planner, also displayed by simulator
         inputs = self.env.sense(self)
         deadline = self.env.get_deadline(self)
+        self.ddlines.append(deadline)
+        time_left = self.discretize_deadline(deadline)
         
         state = tuple({
         'next_waypoint':self.next_waypoint,
         'light': inputs['light'],
 #         'oncoming': inputs['oncoming'],
+        'time_left': time_left,
 #         'left':inputs['left'],
         }.items())
         return state, inputs, deadline
-
+        
+    def discretize_deadline(self, deadline):
+        time_left = float(deadline)/max(self.ddlines)
+        if time_left>0.5:
+            return 2
+#         elif time_left>0.33:
+#             return 1
+        else:
+            return 0
+        
     def choose_action(self, state, epsilon=0.1):
         actions = Environment.valid_actions
         max_q = None
@@ -54,7 +66,7 @@ class LearningAgent(Agent):
         return max_action, max_q
     
     def choose_action_2(self, state, epsilon=0.1):
-    	actions = Environment.valid_actions
+        actions = Environment.valid_actions
         max_q = None
         for act in actions:
             self.ego_q_table[(tuple(state), act)] = self.ego_q_table.get((tuple(state), act), 0.0)
@@ -66,7 +78,7 @@ class LearningAgent(Agent):
         if random.random()<epsilon:
             max_action = random.choice(actions[1:])
         return max_action, max_q
-    	
+        
     def update_q_table(self, table, action, reward, max_q_prime, gamma):
         value = reward + gamma * max_q_prime
         value -= table[(self.state, action)]
@@ -96,18 +108,6 @@ class LearningAgent(Agent):
         
         print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
         
-    
-    def hallucinate(self, iterations):
-        for i in range(iterations):
-            #Choose random state from q_table and act randomly
-            s, a = choice(self.q_table.keys())
-            "---------------------------------------"
-            s_prime = self.execute_action(s, a)
-            a_prime = self.choose_action(s_prime)
-            #Update Q table with state, action, reward, state_prime, and action_prime
-            q_prime = self.q_table[(s_prime, a_prime)]
-            value = self.reward(s) + self.gamma*q_prime - self.q_table[(s, a)]
-            self.q_table[(s, a)] += self.alpha * value
 
 def run():
     """Run the agent for a finite number of trials."""
@@ -118,7 +118,7 @@ def run():
     e.set_primary_agent(a, enforce_deadline=True)  # set agent to track
 
     # Now simulate it
-    sim = Simulator(e, update_delay=0.0005)  # reduce update_delay to speed up simulation
+    sim = Simulator(e, update_delay=0.0001)  # reduce update_delay to speed up simulation
     sim.run(n_trials=100)  # press Esc or close pygame window to quit
 
 
