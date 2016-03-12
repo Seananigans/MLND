@@ -3,6 +3,13 @@ Udacity Machine Learning NanoDegree Projects 1 through 4
 
 ## Descriptions of the Projects in this repo
 
+### Libraries
+Pygame
+Sklearn
+Pandas
+Numpy
+SciPy
+
 ### Train a Smart Cab how to Drive
 Use Q-learning and variations of value iteration to train a simulated car to follow the rules of the road while trying to reach a destination.
 
