@@ -37,7 +37,7 @@ class LearningAgent(Agent):
         state = tuple({
         'next_waypoint':self.next_waypoint,
         'light': inputs['light'],
-#         'oncoming': inputs['oncoming'],
+        'oncoming': inputs['oncoming'],
 #         'time_left': time_left,
         }.items())
         return state, inputs, deadline
@@ -67,7 +67,7 @@ class LearningAgent(Agent):
             max_action = random.choice(actions[1:])
         return max_action, max_q
     
-    def choose_action_2(self, state, epsilon=0.1):
+    def choose_action_ego_allo_policy(self, state, epsilon=0.1):
         actions = Environment.valid_actions
         max_q = None
         for act in actions:
@@ -93,7 +93,7 @@ class LearningAgent(Agent):
         # TODO: Select action according to your policy
         actions = Environment.valid_actions
         action, max_q = self.choose_action(self.state)
-#         action, max_q = self.choose_action_2(self.state)
+#         action, max_q = self.choose_action_ego_allo_policy(self.state)
 
         # Execute action and get reward
         reward = self.env.act(self, action)
