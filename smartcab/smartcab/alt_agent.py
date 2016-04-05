@@ -50,20 +50,18 @@ class LearningAgent(Agent):
 #             return 0.20
         else:
             return 0.05
-        
-    def choose_action(self, state, epsilon=0.1):
+    
+    def choose_action_ego_allo_policy(self, state, epsilon=0.1):
         actions = Environment.valid_actions
         max_q = None
         for act in actions:
-            self.q_table[(tuple(state), act)] = self.q_table.get((tuple(state), act), 0.0)
-            q_value = self.q_table[(tuple(state), act)]
+            self.ego_q_table[(tuple(state), act)] = self.ego_q_table.get((tuple(state), act), 0.0)
+            self.allo_q_table[(tuple(state), act)] = self.allo_q_table.get((tuple(state), act), 0.0)
+            q_value = 0.5*(self.ego_q_table[(tuple(state), act)] + self.allo_q_table[(tuple(state), act)])
             if q_value > max_q:
                 max_q = q_value
                 max_action = act
-        
-        deadline = self.env.get_deadline(self)
-        time_left = self.discretize_deadline(deadline)
-        if random.random()<time_left:
+        if random.random()<epsilon:
             max_action = random.choice(actions[1:])
         return max_action, max_q
         
@@ -78,7 +76,7 @@ class LearningAgent(Agent):
 
         # TODO: Select action according to your policy
         actions = Environment.valid_actions
-        action, max_q = self.choose_action(self.state)
+        action, max_q = self.choose_action_ego_allo_policy(self.state)
 
         # Execute action and get reward
         reward = self.env.act(self, action)
@@ -86,7 +84,8 @@ class LearningAgent(Agent):
         action_prime, max_q_prime = self.choose_action(self.state)
         
         # TODO: Learn policy based on state, action, reward
-        self.update_q_table(self.q_table,action, reward, max_q_prime, gamma=self.gamma)
+        self.update_q_table(self.ego_q_table, action, reward, max_q_prime, gamma=0.0)
+        self.update_q_table(self.allo_q_table, action, reward, max_q_prime, gamma=self.gamma)
         
         self.cummulative_reward += reward
         self.state = state_prime
