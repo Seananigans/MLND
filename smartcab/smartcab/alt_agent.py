@@ -18,13 +18,17 @@ class LearningAgent(Agent):
         self.allo_q_table = {}
         self.cummulative_reward = 0.0
         self.ddlines = []
+        self.neg_reward_total=0
+        self.abs_changes=[]
 
     def reset(self, destination=None):
         self.planner.route_to(destination)
         # TODO: Prepare for a new trip; reset any variables here, if required
         print "Cummulative reward for trial: {}".format(self.cummulative_reward)
+        print "Negative rewards for trial: {}".format(self.neg_reward_total)
         self.cummulative_reward = 0
         self.ddlines = []
+        self.neg_reward_total=0
     
     def update_state(self):
         # Gather inputs
@@ -68,7 +72,9 @@ class LearningAgent(Agent):
     def update_q_table(self, table, action, reward, max_q_prime, gamma):
         value = reward + gamma * max_q_prime
         value -= table[(self.state, action)]
+        temp = table[(self.state, action)]
         table[(self.state, action)] += self.alpha * value
+        self.abs_changes.append(abs(temp - table[(self.state, action)]))
         
     def update(self, t):
         # TODO: Update state
@@ -80,8 +86,11 @@ class LearningAgent(Agent):
 
         # Execute action and get reward
         reward = self.env.act(self, action)
+        #Update the number of negative rewards if reward<0
+        if reward<0:
+        	self.neg_reward_total += 1
         state_prime, inputs, deadline = self.update_state()
-        action_prime, max_q_prime = self.choose_action(self.state)
+        action_prime, max_q_prime = self.choose_action_ego_allo_policy(self.state)
         
         # TODO: Learn policy based on state, action, reward
         self.update_q_table(self.ego_q_table, action, reward, max_q_prime, gamma=0.0)
@@ -104,6 +113,7 @@ def run():
     # Now simulate it
     sim = Simulator(e, update_delay=0.0001)  # reduce update_delay to speed up simulation
     sim.run(n_trials=100)  # press Esc or close pygame window to quit
+    print a.abs_changes
 
 
 if __name__ == '__main__':
