@@ -12,7 +12,7 @@ class LearningAgent(Agent):
         self.planner = RoutePlanner(self.env, self)  # simple route planner to get next_waypoint
         # TODO: Initialize any additional variables here
         self.gamma = 0.95
-        self.alpha = 0.3
+        self.alpha = 0.9
         self.q_table = {}
         self.ego_q_table = {}
         self.allo_q_table = {}
@@ -42,7 +42,7 @@ class LearningAgent(Agent):
         'next_waypoint':self.next_waypoint,
         'light': inputs['light'],
         'oncoming': inputs['oncoming'],
-#         'time_left': time_left,
+        'left': inputs['left']
         }.items())
         return state, inputs, deadline
         

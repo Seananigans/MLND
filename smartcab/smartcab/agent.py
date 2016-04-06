@@ -41,7 +41,8 @@ class LearningAgent(Agent):
         state = tuple({
         'next_waypoint':self.next_waypoint,
         'light': inputs['light'],
-        'oncoming': inputs['oncoming']
+        'oncoming': inputs['oncoming'],
+        'left': inputs['left']
         }.items())
         return state, inputs, deadline
         

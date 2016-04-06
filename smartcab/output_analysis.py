@@ -34,21 +34,38 @@ def plot_metric(item, moving_average=False, window=20,
 				xlabel="Trials", 
 				ylabel="Total Rewards"):
 	mv_avg = []
+	mv_std = []
 	for i in range(len(item)):
 		if i> window:
-			mv_avg.append( sum(item[i-window:i])/window )
-	mv_avg = [None for i in range(window)] + mv_avg
+			in_window = item[i-window:i]
+			mean = sum(in_window)/window
+			stdev = (sum([(i-mean)**2 for i in in_window])/window)**0.5
+			mv_avg.append( mean )
+			mv_std.append( stdev )
+	upper_band = [x+y for x,y in zip(mv_avg, mv_std)]
+	lower_band = [x-y for x,y in zip(mv_avg, mv_std)]
+	mv_avg = [mv_avg[0] for i in range(window)] + mv_avg
+	upper_band = [upper_band[0] for i in range(window)] + upper_band
+	lower_band = [lower_band[0] for i in range(window)] + lower_band
 
-	plt.plot( item, color="b" )
-	plt.plot( mv_avg, color="r")
+	plt.plot( item, color="k" )
+	if moving_average:
+		plt.plot( upper_band, color="m")
+		plt.plot( lower_band, color="m")
+		plt.plot( mv_avg, color="r")
 	plt.title(title)
 	plt.xlabel(xlabel)
 	plt.ylabel(ylabel)
 	plt.show()
 
-plot_metric(changes, window=200, title="Changes to Q-values over time", 
-			xlabel="Moves", ylabel="Change to Q-value")
-plot_metric(rewards)
+#Plot changes to Q table values over moves
+plot_metric(changes, moving_average=True, window=200, 
+			title="Changes to Q-values over time", 
+			xlabel="Moves", 
+			ylabel="Change to Q-value")
+#Plot rewards per trial
+plot_metric(rewards, moving_average=True)
+#Plot the number of negative rewards per trial
 plot_metric(neg_rewards, title="Total Negative Rewards per Trial", ylabel="Total Negative Rewards")
 
 
