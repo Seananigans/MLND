@@ -3,7 +3,7 @@ import numpy as np
 import re
 
 
-fh = open("output2.txt")
+fh = open("output3.txt")
 idx = 0
 total_rewards = 0
 rewards = []
